@@ -16,62 +16,30 @@
   // Query Limit - 100 is the non-premier query limit as of this update
   var QUERY_LIMIT = 100;
   
-  /*
-   * Updates the query, then uses the Distance Matrix Service
-   */   
-  var graph = [];
-  var path = [];
-  var visited = [];
-  var dist =0;
-   function getPath(n)
+  
+  //////////////////////////////////////////////////////////////* AI Logic Starts here  *///////////////////////////////////////////////////////////////////////
+      
+  var graph = [];			//Graph Adjacency List Declaration
+  var path = [];			//Path Array
+  var visited = [];			//Visited Array
+  var dist =0;				//Distance Covered
+  
+     function floyd(rows)
    {
-	
-	if(n==1)
-	{
-	
-		dist+= graph[path[path.length-1]][0];
-		path.push(0);
-		return;
-	}
-	
-	
-	var minDestination;
-	var temp = 9999999;
-	
-		for(var j=0;j<graph.length;j++)
-		{
-			if(j==0 || visited[j])
-				continue;
-			if(graph[path[path.length-1]][j] < temp)
-			{
-				console.log(j);  
-				temp = graph[path[path.length-1]][j];
-				minDestination = j;
-			}
-		}
-		
-		
-		visited[minDestination] = 1;
-	path.push(minDestination);
-	dist+=temp;
-	getPath(--n);
-   }
-   function floyd(rows)
-   {
-	   for (var i = 0; i < rows.length; i++) {
+	   for (var i = 0; i < rows.length; i++) {					//Constructing graph with infinite values
 		graph.push([]);
 		for (var j = 0; j < rows[i].elements.length; j++)
 			graph[i].push(i == j ? 0 : 9999999);
 		}
 	
-		for (var i = 0; i < rows.length; i++) {
+		for (var i = 0; i < rows.length; i++) {					//Poplating graph from Google API Distance Matrix
 			for (var j=0;j<rows[i].elements.length;j++)
 				 if(rows[i].elements[j].status != "ZERO_RESULTS"){
 					graph[i][j] = rows[i].elements[j].distance.value;
 				 }
 		}
 
-		for (var k = 0; k < rows.length; k++) {
+		for (var k = 0; k < rows.length; k++) {					//Floyd Warshal APSP
 		  for (var i = 0; i < rows.length; i++) {
 			for (var j = 0; j < rows.length; j++) {
 			  if (graph[i][j] > graph[i][k] + graph[k][j])
@@ -81,19 +49,54 @@
 		}
 		
        
-		path.push(0);
-		getPath(graph.length);
-		var solution = "Source";
-		for(var i=1;i<path.length-1;i++)
+		path.push(0);										//Start path by pushing source node
+		getPath(graph.length);								//getPath functuin call
+		var solution = "Source";							
+		for(var i=1;i<path.length-1;i++)					//Appending paths to solution
 		{
 			solution+= " -> Destination " + path[i];
 		}
-		solution += " -> Source";
+		solution += " -> Source";							//Printing solytion
 		document.getElementById("solution").innerHTML = "<b>The Optimal Path Is:</b>" + "<br>" + solution +"<br><b>"+"Distance Covered"+"</b><br>" +  dist/1000 + " Km";
-		console.log(dist);  
-		console.log(path);  
-		console.log(graph);	
    }
+   
+   
+   
+   function getPath(n)		//Function that traverse created APSP and gets optimal path accordingly
+   {
+	
+	if(n==1)			//Checks if there is only one unvisited destination left
+	{
+		dist+= graph[path[path.length-1]][0];		//Add distance from final destination to source
+		path.push(0);								//Add source as last node
+		return;
+	}
+	
+		
+	var minDestination;				//Tracks minimum destination
+	var temp = 9999999;
+	
+	for(var j=0;j<graph.length;j++)			//Traverse Adjacency list 
+	{
+		if(j==0 || visited[j])			//Continue of node is source node or is visited
+			continue;
+		if(graph[path[path.length-1]][j] < temp)			//check minimize distance
+		{
+			temp = graph[path[path.length-1]][j];
+			minDestination = j;
+		}
+	}
+	
+	
+	visited[minDestination] = 1;
+	path.push(minDestination);
+	dist+=temp;
+	getPath(--n);
+   }
+
+   
+   ///////////////////////////////////////////////////////////////////////* AI Logic Ends Here   */////////////////////////////////////////////////////////////////////////////////
+  
    
   function updateMatrix() {
     updateQuery();
@@ -101,10 +104,7 @@
         if (status == "OK") {
           populateTable(response.rows);
 		  
-	floyd(response.rows);
-	
-	
-			
+	floyd(response.rows);		
         }else{
             alert("There was a problem with the request.  The reported error is '"+status+"'");
         }
